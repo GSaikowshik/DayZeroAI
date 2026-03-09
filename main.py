@@ -1,7 +1,7 @@
 import os
 import json
 import threading
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Any
@@ -85,7 +85,7 @@ async def get_idea(idea_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/validate-idea", response_model=GTMAnalysis)
-async def validate_idea(request: IdeaRequest):
+async def validate_idea(request: IdeaRequest, background_tasks: BackgroundTasks):
     if not os.environ.get("GEMINI_API_KEY"):
         raise HTTPException(
             status_code=500,
@@ -132,7 +132,7 @@ async def validate_idea(request: IdeaRequest):
             except Exception as db_err:
                 print(f"Supabase Insertion Error: {db_err}")
 
-        threading.Thread(target=save_to_db, daemon=True).start()
+        background_tasks.add_task(save_to_db)
 
         return analysis_data
 
