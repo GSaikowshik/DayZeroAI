@@ -51,7 +51,7 @@ DATABASE_URL=postgresql://postgres:password@db.your-project-ref.supabase.co:6543
 **Frontend (`/frontend/.env`):**
 ```env
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_publishable_key_here
+VITE_SUPABASE_ANON_KEY=your_supabase_publishable_key_here
 ```
 
 ### 3. Start the Backend (FastAPI)
