@@ -345,7 +345,7 @@ function App() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/validate-idea', {
+      const response = await fetch('https://founderiq-backend.onrender.com/validate-idea', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
