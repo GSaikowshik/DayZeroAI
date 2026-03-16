@@ -1,6 +1,6 @@
-# FounderIQ
+# DayZero AI
 
-FounderIQ is an AI-powered platform designed to act as a ruthless, concise Venture Capitalist. Pitch your startup idea and receive an instant, comprehensive Go-To-Market (GTM) analysis to shape your strategy.
+DayZero AI is an AI-powered platform designed to act as a ruthless, concise Venture Capitalist. Pitch your startup idea and receive an instant, comprehensive Go-To-Market (GTM) analysis to shape your strategy.
 
 ## 🚀 Features
 

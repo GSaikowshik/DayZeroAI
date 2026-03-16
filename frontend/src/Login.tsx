@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, LogIn, UserPlus, Sparkles, Eye, EyeOff, LineChart } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { useNavigate, Link } from 'react-router-dom';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -12,6 +13,15 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate('/dashboard');
+      }
+    });
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +36,7 @@ export default function Login() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        // App.tsx will react to onAuthStateChange and show the main app
+        navigate('/dashboard');
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Authentication failed.' });
@@ -49,15 +59,17 @@ export default function Login() {
       >
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <LineChart className="w-7 h-7 text-cyan-400" />
-            <span className="font-bold text-2xl tracking-wide text-white">
-              Founder<span className="text-cyan-400">IQ</span>
+          <Link to="/" className="inline-flex items-center gap-2 mb-4 group outline-none">
+            <LineChart className="w-7 h-7 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
+            <span className="font-bold text-2xl tracking-wide text-white group-hover:text-slate-200 transition-colors">
+              DayZero <span className="text-cyan-400 group-hover:text-cyan-300 transition-colors">AI</span>
             </span>
-          </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium">
-            <Sparkles className="w-4 h-4" />
-            <span>AI-Powered VC Validation</span>
+          </Link>
+          <div className="flex justify-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-medium">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered VC Validation</span>
+            </div>
           </div>
         </div>
 

@@ -1,36 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Variants } from 'framer-motion';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { 
-  Sparkles, ArrowRight, Loader2, Target, CheckCircle2, AlertTriangle, 
-  TrendingUp, Briefcase, Activity, Rocket, DollarSign, BarChart3, 
-  CloudLightning, X, LineChart, Lightbulb, BrainCircuit, Github, 
-  Twitter, Linkedin, LogOut
+  Sparkles, ArrowRight, Loader2, 
+  TrendingUp, Activity, BarChart3, 
+  BrainCircuit, Github, AlertTriangle, X, LineChart, Lightbulb, Target,
+  Linkedin, LogOut, LayoutList, TextSelection
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
-import Login from './Login';
+import { useNavigate, Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
 
-// Interfaces mapping to backend GTMAnalysis model
-interface MarketSizeData {
-  tam_usd: number;
-  sam_usd: number;
-  som_usd: number;
+interface RevenueProjection {
+  year: string;
+  revenue: number;
+}
+
+interface MarketShare {
+  name: string;
+  share: number;
+}
+
+interface CompetitorComparison {
+  feature: string;
+  competitor_a: string;
+  competitor_b: string;
+  dayzero_ai: string;
+}
+
+interface ChartData {
+  revenue_projection: RevenueProjection[];
+  market_share_pie: MarketShare[];
+  competitor_comparison_table: CompetitorComparison[];
+  viability_score: number;
 }
 
 interface GTMAnalysis {
-  ProblemStatement: string[];
-  MarketOverview: string[];
-  MarketSize: MarketSizeData;
-  ICP: string;
-  Persona: string;
-  GTMStrategy: string[];
-  RevenueModel: string[];
-  ROIPotential: string;
-  Risks: string[];
-  ViabilityScore: number;
+  markdown_text: string;
+  chart_data: ChartData;
 }
+
+
 
 const loadingTexts = [
   'Analyzing Market Trends...',
@@ -132,29 +144,23 @@ function LoadingState() {
 
 const COLORS = ['#8b5cf6', '#6366f1', '#06b6d4']; // Purple, Indigo, Cyan
 
-function MarketChart({ data }: { data: MarketSizeData }) {
-  const chartData = [
-    { name: 'TAM (Total)', value: data.tam_usd },
-    { name: 'SAM (Service)', value: data.sam_usd },
-    { name: 'SOM (Obtain)', value: data.som_usd },
-  ];
-
+function MarketChart({ data }: { data: MarketShare[] }) {
   return (
-    <div className="h-64 w-full">
+    <div className="h-64 w-full mt-4">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
-            data={chartData}
+            data={data}
             cx="50%"
             cy="50%"
             innerRadius={65}
             outerRadius={85}
             paddingAngle={6}
-            dataKey="value"
+            dataKey="share"
             stroke="none"
             animationDuration={1500}
           >
-            {chartData.map((_, index) => (
+            {data.map((_, index) => (
               <Cell 
                 key={`cell-${index}`} 
                 fill={COLORS[index % COLORS.length]} 
@@ -163,17 +169,9 @@ function MarketChart({ data }: { data: MarketSizeData }) {
             ))}
           </Pie>
           <Tooltip 
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                return (
-                  <div className="bg-slate-900/90 border border-slate-700 p-3 rounded-lg shadow-xl backdrop-blur-md">
-                    <p className="text-white font-bold mb-1">{payload[0].name}</p>
-                    <p className="text-cyan-400 font-mono font-medium">${Number(payload[0].value).toLocaleString()}</p>
-                  </div>
-                );
-              }
-              return null;
-            }}
+            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+            itemStyle={{ color: '#e2e8f0' }}
+            formatter={(value: any) => [`${value}%`, 'Market Share']}
           />
           <Legend 
             verticalAlign="bottom" 
@@ -222,7 +220,7 @@ function Dashboard({ analysis }: { analysis: GTMAnalysis }) {
                 <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
                 <circle 
                   cx="50" cy="50" r="45" fill="none" stroke="url(#score-gradient)" strokeWidth="8" 
-                  strokeDasharray="283" strokeDashoffset={283 - (283 * analysis.ViabilityScore) / 100}
+                  strokeDasharray="283" strokeDashoffset={283 - (283 * analysis.chart_data.viability_score) / 100}
                   className="transition-all duration-1500 ease-out" strokeLinecap="round"
                 />
                 <defs>
@@ -234,88 +232,150 @@ function Dashboard({ analysis }: { analysis: GTMAnalysis }) {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center mt-1">
                 <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 drop-shadow-md">
-                  {analysis.ViabilityScore}
+                  {analysis.chart_data.viability_score}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Market Opportunity Card */}
+        {/* Market Share Opportunity Card */}
         <div className="glass-card p-8 rounded-3xl border-t-indigo-500/50 bg-gradient-to-bl from-slate-900/80 to-slate-950/80 flex flex-col shadow-[0_8px_32px_rgba(99,102,241,0.1)] overflow-hidden">
           <div className="flex items-center gap-3 text-indigo-400 mb-2">
             <BarChart3 className="w-7 h-7" />
-            <h3 className="text-2xl font-bold text-white tracking-wide">Market Opportunity</h3>
+            <h3 className="text-2xl font-bold text-white tracking-wide">Market Share Split</h3>
           </div>
-          <p className="text-slate-400 text-sm mb-4">Breakdown of Addressable vs. Obtainable Revenue</p>
+          <p className="text-slate-400 text-sm mb-4">Estimated competitor dominance vs. your wedge</p>
           <div className="flex-grow flex items-center justify-center -mb-2">
-             <MarketChart data={analysis.MarketSize} />
+             <MarketChart data={analysis.chart_data.market_share_pie} />
           </div>
         </div>
       </motion.div>
 
-      {/* Masonry Layout for Details */}
-      <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
-        <ResultCard icon={<CloudLightning />} title="Problem Statement" content={analysis.ProblemStatement} />
-        <ResultCard icon={<Target />} title="Ideal Customer Profile" content={analysis.ICP} className="border-t-emerald-500/30" iconColor="text-emerald-400" />
-        <ResultCard icon={<CheckCircle2 />} title="User Persona" content={analysis.Persona} className="border-t-blue-500/30" iconColor="text-blue-400" />
-        <ResultCard icon={<Briefcase />} title="GTM Strategy" content={analysis.GTMStrategy} className="border-t-purple-500/30" iconColor="text-purple-400" />
-        <ResultCard icon={<DollarSign />} title="Revenue Model" content={analysis.RevenueModel} className="border-t-green-500/30" iconColor="text-green-400" />
-        <ResultCard icon={<Rocket />} title="Market Overview" content={analysis.MarketOverview} className="border-t-rose-500/30" iconColor="text-rose-400" />
-        <ResultCard icon={<TrendingUp />} title="ROI Potential" content={analysis.ROIPotential} className="border-t-teal-500/30" iconColor="text-teal-400" />
-        <ResultCard icon={<AlertTriangle />} title="Key Risks" content={analysis.Risks} className="border-t-amber-500/50 bg-slate-900/90 shadow-[0_0_20px_rgba(245,158,11,0.05)]" iconColor="text-amber-400" />
-      </div>
-    </motion.div>
-  );
-}
+      {/* Markdown Text Analysis */}
+      <motion.div variants={itemVariants} className="glass-card p-8 md:p-10 rounded-3xl border-t-purple-500/50 shadow-xl prose prose-invert prose-cyan max-w-none">
+        <div className="flex items-center gap-3 text-purple-400 mb-6 pb-6 border-b border-white/10">
+          <TextSelection className="w-7 h-7" />
+          <h3 className="text-2xl font-bold text-white tracking-wide m-0">Go-To-Market Thesis</h3>
+        </div>
+        <ReactMarkdown
+          components={{
+            h2: ({node, ...props}) => <h2 className="text-2xl font-bold text-cyan-300 mt-10 mb-4" {...props} />,
+            h3: ({node, ...props}) => <h3 className="text-xl font-bold text-indigo-300 mt-8 mb-3" {...props} />,
+            p: ({node, ...props}) => <p className="text-slate-300 leading-relaxed mb-4 text-base" {...props} />,
+            li: ({node, ...props}) => <li className="text-slate-300 mb-2" {...props} />,
+            strong: ({node, ...props}) => <strong className="text-emerald-400 font-semibold" {...props} />,
+          }}
+        >
+          {analysis.markdown_text}
+        </ReactMarkdown>
+      </motion.div>
 
-function ResultCard({ icon, title, content, className = '', iconColor = 'text-cyan-400' }: { icon: React.ReactNode, title: string, content: string | string[], className?: string, iconColor?: string }) {
-  return (
-    <motion.div variants={itemVariants} className={`glass-card p-6 rounded-2xl flex flex-col h-fit hover:bg-slate-800/60 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,255,255,0.05)] hover:-translate-y-1 break-inside-avoid shadow-lg ${className}`}>
-      <div className={`flex items-center gap-3 mb-4 ${iconColor}`}>
-        <span className="flex items-center justify-center w-6 h-6 [&>svg]:w-6 [&>svg]:h-6">{icon}</span>
-        <h3 className="text-lg font-bold text-white tracking-wide">{title}</h3>
-      </div>
-      {Array.isArray(content) ? (
-        <ul className="list-disc list-outside ml-4 space-y-2 text-slate-300 text-sm leading-relaxed">
-          {content.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-line">
-          {content}
-        </p>
-      )}
+      {/* Visual Data Section */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+        
+        {/* Revenue Projection Line Chart */}
+        <div className="glass-card p-8 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 to-slate-900/60 flex flex-col shadow-lg overflow-hidden">
+          <div className="flex items-center gap-3 text-emerald-400 mb-6">
+            <TrendingUp className="w-7 h-7" />
+            <h3 className="text-xl font-bold text-white">5-Year Revenue Projection</h3>
+          </div>
+          <div className="flex-grow w-full h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsLineChart data={analysis.chart_data.revenue_projection}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="year" stroke="#94a3b8" tick={{fill: '#94a3b8'}} />
+                <YAxis 
+                  stroke="#94a3b8" 
+                  tick={{fill: '#94a3b8'}} 
+                  tickFormatter={(val) => `$${(val / 1000000).toFixed(1)}M`} 
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }}
+                  itemStyle={{ color: '#10b981' }}
+                  formatter={(val: any) => [`$${val.toLocaleString()}`, 'Revenue']}
+                />
+                <Line type="monotone" dataKey="revenue" stroke="#34d399" strokeWidth={3} dot={{ fill: '#34d399', r: 4 }} activeDot={{ r: 6 }} />
+              </RechartsLineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Competitor Comparison Table */}
+        <div className="glass-card p-8 rounded-3xl border border-rose-500/20 bg-gradient-to-br from-rose-950/30 to-slate-900/60 shadow-lg overflow-x-auto">
+          <div className="flex items-center gap-3 text-rose-400 mb-6">
+            <LayoutList className="w-7 h-7" />
+            <h3 className="text-xl font-bold text-white">Competitor Features Setup</h3>
+          </div>
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="py-4 px-4 text-sm font-semibold text-slate-400">Feature</th>
+                <th className="py-4 px-4 text-sm font-semibold text-slate-400">Competitor A</th>
+                <th className="py-4 px-4 text-sm font-semibold text-slate-400">Competitor B</th>
+                <th className="py-4 px-4 text-sm font-bold text-rose-400">DayZero AI Idea</th>
+              </tr>
+            </thead>
+            <tbody>
+              {analysis.chart_data.competitor_comparison_table.map((row, i) => (
+                <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="py-4 px-4 text-sm text-slate-200">{row.feature}</td>
+                  <td className="py-4 px-4 text-sm text-slate-400">{row.competitor_a}</td>
+                  <td className="py-4 px-4 text-sm text-slate-400">{row.competitor_b}</td>
+                  <td className="py-4 px-4 text-sm text-rose-300 font-medium">{row.dayzero_ai}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+      </motion.div>
     </motion.div>
   );
 }
 
 function App() {
-  const [idea, setIdea] = useState('');
+  const BACKEND_URL = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://founderiq-backend.onrender.com';
+
+  const [originalIdea, setOriginalIdea] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [generatedQuestions, setGeneratedQuestions] = useState<string[] | null>(null);
+  const [userAnswers, setUserAnswers] = useState<string[]>([]);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const navigate = useNavigate();
+
+
   const [analysis, setAnalysis] = useState<GTMAnalysis | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('--- Auth: getSession result ---', session ? `User: ${session.user?.id}` : 'No session');
       setSession(session);
       setAuthLoading(false);
+      if (!session) {
+        navigate('/login');
+      }
     });
     // Listen for auth changes (login / logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('--- Auth: onAuthStateChange ---', _event, session ? `User: ${session.user?.id}` : 'No session');
       setSession(session);
+      if (!session) {
+        navigate('/login');
+      }
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setAnalysis(null);
-    setIdea('');
+    setOriginalIdea('');
   };
 
   // Auto-scroll to top when 'Get Started' or logo is clicked
@@ -330,9 +390,54 @@ function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  const handleDeepDive = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!originalIdea.trim()) return;
+
+    console.log('--- Step 1: Deep Dive Triggered ---');
+    console.log('Sending originalIdea to /generate-questions:', { startup_idea: originalIdea });
+
+    setIsGeneratingQuestions(true);
+    setError(null);
+
+    const el = document.getElementById('hero-section');
+    if (el && !analysis) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/generate-questions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          startup_idea: originalIdea,
+          user_id: session?.user?.id ?? null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate clarifying questions.');
+      }
+
+      const data = await response.json();
+      console.log('--- Step 2: Questions Received ---', data.questions);
+      setGeneratedQuestions(data.questions);
+      setUserAnswers(new Array(data.questions.length).fill(''));
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
+  };
+
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!idea.trim()) return;
+    if (!originalIdea.trim()) return;
 
     setIsLoading(true);
     setError(null);
@@ -345,13 +450,24 @@ function App() {
     }
 
     try {
-      const response = await fetch('https://founderiq-backend.onrender.com/validate-idea', {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
+      console.log('--- Step 3 & 4: Submitting Analysis ---');
+      const payload = {
+        startup_idea: originalIdea,
+        user_id: session?.user?.id ?? null,
+        questions: generatedQuestions ?? undefined,
+        answers: generatedQuestions ? userAnswers : undefined,
+      };
+      console.log('Payload being sent to /validate-idea:', payload);
+
+      const response = await fetch(`${BACKEND_URL}/validate-idea`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          startup_idea: idea,
-          user_id: session?.user?.id ?? null,
-        }),
+        headers,
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -359,7 +475,13 @@ function App() {
       }
 
       const data = await response.json();
+      console.log('--- Response Received ---', data);
       setAnalysis(data);
+      setGeneratedQuestions(null);
+      setUserAnswers([]);
+      
+      // Save directly from frontend disabled 
+      // Refresh history after successful analysis disabled
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
@@ -376,9 +498,9 @@ function App() {
     );
   }
 
-  // If not authenticated, show login page
+  // If not authenticated, we navigated away
   if (!session) {
-    return <Login />;
+    return null;
   }
 
   return (
@@ -391,12 +513,12 @@ function App() {
       {/* Navigation Bar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/70 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 lg:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto h-16 flex items-center justify-between">
-          <a href="#" onClick={scrollToTop} className="flex items-center gap-2 text-white group outline-none">
+          <Link to="/" onClick={scrollToTop} className="flex items-center gap-2 text-white group outline-none">
             <LineChart className="w-6 h-6 text-cyan-400 group-hover:text-cyan-300 transition-colors" />
             <span className="font-bold text-xl tracking-wide group-hover:text-slate-200 transition-colors">
-              Founder<span className="text-cyan-400 group-hover:text-cyan-300 transition-colors">IQ</span>
+              DayZero <span className="text-cyan-400 group-hover:text-cyan-300 transition-colors">AI</span>
             </span>
-          </a>
+          </Link>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#how-it-works" className="hover:text-cyan-400 transition-colors">How it Works</a>
             <a href="#examples" className="hover:text-cyan-400 transition-colors">Examples</a>
@@ -414,6 +536,8 @@ function App() {
           </div>
         </div>
       </nav>
+
+
 
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col items-center pt-28 pb-32 px-4 sm:px-6 lg:px-8 z-10 w-full">
@@ -449,32 +573,107 @@ function App() {
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
               
               <form onSubmit={handleAnalyze} className="relative bg-slate-900/50 rounded-xl p-6 sm:p-8 backdrop-blur-2xl">
-                <label htmlFor="idea" className="block text-sm font-medium text-slate-300 mb-3 ml-1">
-                  Describe your idea, target audience, and unique value proposition...
-                </label>
-                <textarea
-                  id="idea"
-                  rows={5}
-                  value={idea}
-                  onChange={(e) => setIdea(e.target.value)}
-                  className="glass-input block w-full rounded-xl sm:text-lg p-5 resize-none leading-relaxed"
-                  placeholder="e.g. A SaaS platform for independent coffee shops to source beans directly from farmers using smart contracts..."
-                  required
-                />
+                {!generatedQuestions && (
+                  <>
+                    <label htmlFor="originalIdea" className="block text-sm font-medium text-slate-300 mb-3 ml-1">
+                      Describe your idea, target audience, and unique value proposition...
+                    </label>
+                    <textarea
+                      id="originalIdea"
+                      rows={5}
+                      value={originalIdea}
+                      onChange={(e) => setOriginalIdea(e.target.value)}
+                      className="glass-input block w-full rounded-xl sm:text-lg p-5 resize-none leading-relaxed"
+                      placeholder="e.g. A SaaS platform for independent coffee shops to source beans directly from farmers using smart contracts..."
+                      required
+                    />
+                  </>
+                )}
 
-                <div className="mt-6 flex justify-end">
-                  <motion.button
-                    type="submit"
-                    disabled={isLoading || !idea.trim()}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-white transition-all duration-200 ease-in-out rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  >
+                <AnimatePresence>
+                  {generatedQuestions && generatedQuestions.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-6 space-y-5 overflow-hidden"
+                    >
+                      <h3 className="text-lg font-bold text-cyan-400 border-b border-cyan-500/20 pb-2 flex items-center gap-2">
+                        <BrainCircuit className="w-5 h-5" /> Deep Dive Questions
+                      </h3>
+                      {generatedQuestions.map((q, i) => (
+                        <div key={i}>
+                          <label className="block text-sm font-medium text-slate-300 mb-2 ml-1">
+                            {q}
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={userAnswers[i] || ''}
+                            onChange={(e) => {
+                              const newAns = [...userAnswers];
+                              newAns[i] = e.target.value;
+                              setUserAnswers(newAns);
+                            }}
+                            className="glass-input block w-full rounded-xl p-4 resize-none text-sm text-slate-200 focus:border-cyan-500/50"
+                            placeholder="Your answer..."
+                            required
+                          />
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <div className="mt-6 flex flex-col sm:flex-row justify-end gap-4">
+                  {!generatedQuestions ? (
                     <>
-                      <span>Analyze Market Viability</span>
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      <motion.button
+                        type="button"
+                        onClick={handleDeepDive}
+                        disabled={isGeneratingQuestions || isLoading || !originalIdea.trim()}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="group relative inline-flex items-center justify-center gap-2 px-6 py-4 font-bold text-white transition-all duration-200 ease-in-out rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
+                      >
+                        {isGeneratingQuestions ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <BrainCircuit className="w-5 h-5 text-purple-400" />
+                            <span>Deep Dive</span>
+                          </>
+                        )}
+                      </motion.button>
+                      <motion.button
+                        type="submit"
+                        disabled={isGeneratingQuestions || isLoading || !originalIdea.trim()}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-white transition-all duration-200 ease-in-out rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
+                      >
+                        <>
+                          <span>Quick Analyze</span>
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      </motion.button>
                     </>
-                  </motion.button>
+                  ) : (
+                    <motion.button
+                      type="submit"
+                      disabled={isLoading}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 font-bold text-white transition-all duration-200 ease-in-out rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
+                    >
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        <span>Submit Deep Dive Analysis</span>
+                      </>
+                    </motion.button>
+                  )}
                 </div>
               </form>
             </div>
@@ -566,7 +765,7 @@ function App() {
                       key={idx}
                       onClick={(e) => {
                         e.preventDefault();
-                        setIdea(example.idea);
+                        setOriginalIdea(example.idea);
                         scrollToHero();
                       }}
                       className="text-left glass-card p-6 rounded-2xl flex flex-col h-full hover:bg-slate-800/40 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] hover:border-cyan-500/30 transition-all group focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
@@ -597,14 +796,13 @@ function App() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 opacity-80">
             <LineChart className="w-5 h-5 text-slate-400" />
-            <span className="font-bold text-lg text-slate-300">Venture<span className="text-slate-400">AI</span></span>
+            <span className="font-bold text-lg text-slate-300">DayZero <span className="text-slate-400">AI</span></span>
           </div>
-          <div className="text-slate-500 text-sm font-medium">
-            Built at Hackathon &copy; {new Date().getFullYear()} • All rights reserved
+          <div className="text-slate-400 text-sm font-medium">
+            Vibe coded by <span className="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent font-bold">GANDIKOTA SAIKOWSHIK</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <a href="#" className="hover:text-cyan-400 transition-colors" aria-label="Twitter"><Twitter className="w-5 h-5" /></a>
-            <a href="#" className="hover:text-cyan-400 transition-colors" aria-label="GitHub"><Github className="w-5 h-5" /></a>
+            <a href="https://github.com/GSaikowshik/FounderIQ" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors" aria-label="GitHub"><Github className="w-5 h-5" /></a>
             <a href="#" className="hover:text-cyan-400 transition-colors" aria-label="LinkedIn"><Linkedin className="w-5 h-5" /></a>
           </div>
         </div>
