@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion';
-import { ArrowRight, LineChart, Sparkles, Target, Zap, ShieldCheck } from 'lucide-react';
+import { ArrowRight, LineChart, Sparkles, Target, Zap, ShieldCheck, Linkedin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function LandingPage() {
@@ -127,8 +127,17 @@ export default function LandingPage() {
             <LineChart className="w-5 h-5 text-slate-400" />
             <span className="font-bold text-lg text-slate-300">DayZero <span className="text-slate-400">AI</span></span>
           </div>
-          <div className="text-slate-400 text-sm font-medium">
-             Vibe coded by <span className="bg-gradient-to-r from-cyan-400 to-indigo-400 bg-clip-text text-transparent font-bold">GANDIKOTA SAIKOWSHIK</span>
+          <div className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
+            <span>Vibe coded by</span>
+            <a 
+              href="https://www.linkedin.com/in/gandikotasaikowshik/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="group flex items-center gap-1 text-white hover:text-blue-400 font-bold transition-all"
+            >
+              <span>GANDIKOTA SAIKOWSHIK</span>
+              <Linkedin className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors" />
+            </a>
           </div>
         </div>
       </footer>
