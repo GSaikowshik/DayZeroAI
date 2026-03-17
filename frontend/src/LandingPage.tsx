@@ -128,11 +128,11 @@ export default function LandingPage() {
             <span className="font-bold text-lg text-slate-300">DayZero <span className="text-slate-400">AI</span></span>
           </div>
           <div className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
-            <span>Vibe coded by</span>
-            <a 
-              href="https://www.linkedin.com/in/gandikotasaikowshik/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <span>Developed by</span>
+            <a
+              href="https://www.linkedin.com/in/gandikotasaikowshik/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="group flex items-center gap-1 text-white hover:text-blue-400 font-bold transition-all"
             >
               <span>GANDIKOTA SAIKOWSHIK</span>
